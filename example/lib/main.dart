@@ -11,6 +11,7 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   String videoUrl = "https://www.runoob.com/try/demo_source/movie.mp4";
+
   // String videoUrl = "https://yun.zxziyuan-yun.com/20180221/4C6ivf8O/index.m3u8";
   // String videoUrl = "http://vodkgeyttp8.vod.126.net/cloudmusic/1241/core/e30b/aec700ee466da6c8ce51d12953e7b89f.mp4?wsSecret=a6d7342a3ea018d632b3d7ce56ffd11f&wsTime=1580815486";
   // String videoUrl = "http://vod.anyrtc.cc/364c01b9c8ca4e46bd65e7307887341d/34688ef93da349628d5e4efacf8a5167-9fd7790c8f5862b09c350e4a916b203d.mp4";
@@ -23,6 +24,7 @@ class _MyAppState extends State<MyApp> {
   bool showAdvertCover = false; //是否显示广告
 
   bool get isPlaying => _isPlaying;
+
   set isPlaying(bool playing) {
     print("playing  $playing");
     _isPlaying = playing;
@@ -91,14 +93,15 @@ class _MyAppState extends State<MyApp> {
 
                         /// 自定义顶部控制栏
                         videoTopBarStyle: VideoTopBarStyle(
-                          show: true, //是否显示
-                          height: 30,
+                          show: true,
+                          //是否显示
+                          height: 60,
                           padding:
                               EdgeInsets.symmetric(vertical: 8, horizontal: 10),
                           barBackgroundColor: Color.fromRGBO(0, 0, 0, 0.5),
                           popIcon: Icon(
                             Icons.arrow_back,
-                            size: 16,
+                            size: 20,
                             color: Colors.white,
                           ),
                           contents: [
@@ -112,7 +115,8 @@ class _MyAppState extends State<MyApp> {
                                 ),
                               ),
                             )
-                          ], //自定义顶部控制栏中间显示区域
+                          ],
+                          //自定义顶部控制栏中间显示区域
                           actions: [
                             GestureDetector(
                               onTap: () {
@@ -168,7 +172,7 @@ class _MyAppState extends State<MyApp> {
                               EdgeInsets.symmetric(vertical: 8, horizontal: 10),
 
                           ///设置控制拦的高度，默认为30，如果图标设置过大但是高度不够就会出现图标被裁剪的现象
-                          height: 30,
+                          height: 60,
 
                           /// 自定义进度条样式
                           // progressStyle: VideoProgressStyle(
@@ -190,13 +194,13 @@ class _MyAppState extends State<MyApp> {
 
                           /// 更改进度栏的播放按钮
                           playIcon: Icon(Icons.play_arrow,
-                              color: Colors.white, size: 16),
+                              color: Colors.white, size: 20),
 
                           /// 更改进度栏的暂停按钮
                           pauseIcon: Icon(
                             Icons.pause,
                             color: Colors.white,
-                            size: 16,
+                            size: 20,
                           ),
 
                           /// 更改进度栏的快退按钮
@@ -227,17 +231,26 @@ class _MyAppState extends State<MyApp> {
                             color: Colors.red,
                           ),
 
+                          nextIcon: Icon(
+                            Icons.skip_next,
+                            size: 20,
+                            color: Colors.white,
+                          ),
+
                           /// 决定控制栏的元素以及排序，示例见上方图3
                           itemList: [
                             "rewind",
                             "play",
+                            "next",
                             "forward",
                             "position-time", //当前播放时间
                             "progress", //线条形进度条（与‘basic-progress’二选一）
                             // "basic-progress",//矩形进度条（与‘progress’二选一）
                             "duration-time", //视频总时长
                             // "time",//格式：当前时间/视频总时长
-                            "fullscreen"
+                            "fullscreen",
+                            "speed",
+                            "definition",
                           ],
                         ),
 

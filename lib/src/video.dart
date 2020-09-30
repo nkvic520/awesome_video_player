@@ -15,6 +15,7 @@ import './widget/linear_progress_bar.dart';
 import './widget/video_top_bar.dart';
 import './widget/video_bottom_bar.dart';
 import './widget/video_loading_view.dart';
+import 'widget/speed_text.dart';
 
 typedef VideoCallback<T> = void Function(T t);
 
@@ -31,12 +32,14 @@ class AwsomeVideoPlayer extends StatefulWidget {
     this.onpause,
     this.ontimeupdate,
     this.onprogressdrag,
+    this.onSpeedChange,
     this.onended,
     this.onvolume,
     this.onbrightness,
     this.onnetwork,
     this.onfullscreen,
     this.onpop,
+    this.onLock,
   })  : playOptions = playOptions ?? VideoPlayOptions(),
         videoStyle = videoStyle ?? VideoStyle(),
         super(key: key);
@@ -75,11 +78,17 @@ class AwsomeVideoPlayer extends StatefulWidget {
 
   /// 屏幕亮度回调
   final VideoCallback<bool> onfullscreen;
+
   //顶部控制栏点击返回回调
   final VideoCallback<VideoPlayerValue> onpop;
 
+  final VideoCallback<bool> onLock;
+
   /// 进度被拖拽的回调
   final VideoProgressDragHandle onprogressdrag;
+
+  /// 倍速的回调
+  final SpeedChangeHandle onSpeedChange;
 
   @override
   _AwsomeVideoPlayerState createState() => _AwsomeVideoPlayerState();
@@ -103,6 +112,9 @@ class _AwsomeVideoPlayerState extends State<AwsomeVideoPlayer>
 
   /// 是否显示控制拦
   bool showMeau = false;
+  bool locked = false;
+  bool showLock = true;
+  int indicatorType = 0;
 
   /// 是否正在缓冲
   bool checkBuffing = false;
@@ -341,21 +353,34 @@ class _AwsomeVideoPlayerState extends State<AwsomeVideoPlayer>
 
   /// 显示或隐藏菜单栏
   void toggleControls() {
-    clearHideControlbarTimer();
+    if (locked) {
+      clearHideControlbarTimer();
 
-    if (!showMeau) {
-      showMeau = true;
-      createHideControlbarTimer();
-    } else {
-      showMeau = false;
-    }
-    setState(() {
-      if (showMeau) {
-        controlBarAnimationController.forward();
+      if (!showLock) {
+        showLock = true;
+        createHideLockTimer();
       } else {
-        controlBarAnimationController.reverse();
+        showLock = false;
       }
-    });
+    } else {
+      clearHideControlbarTimer();
+
+      if (!showMeau) {
+        showMeau = true;
+        showLock = true;
+        createHideControlbarTimer();
+      } else {
+        showMeau = false;
+        showLock = false;
+      }
+      setState(() {
+        if (showMeau) {
+          controlBarAnimationController.forward();
+        } else {
+          controlBarAnimationController.reverse();
+        }
+      });
+    }
   }
 
   void createHideControlbarTimer() {
@@ -367,6 +392,23 @@ class _AwsomeVideoPlayerState extends State<AwsomeVideoPlayer>
         if (showMeau) {
           setState(() {
             showMeau = false;
+            showLock = false;
+            controlBarAnimationController.reverse();
+          });
+        }
+      }
+    });
+  }
+
+  void createHideLockTimer() {
+    clearHideControlbarTimer();
+
+    ///如果是播放状态0.5秒后自动隐藏
+    showTime = Timer(Duration(milliseconds: 5000), () {
+      if (controller != null && controller.value.isPlaying) {
+        if (locked) {
+          setState(() {
+            showLock = false;
             controlBarAnimationController.reverse();
           });
         }
@@ -399,6 +441,25 @@ class _AwsomeVideoPlayerState extends State<AwsomeVideoPlayer>
       controller.seekTo(Duration(
           seconds: currentPosition.inSeconds + widget.playOptions.seekSeconds));
     });
+  }
+
+  /// 倍速
+  void changeSpeed() {
+    createHideControlbarTimer();
+
+    List speeds = [0.75, 1.0, 1.25, 1.5, 2.0];
+    var playbackSpeed = controller.value.playbackSpeed;
+    int index = speeds.indexOf(playbackSpeed);
+    if (index < speeds.length - 1) {
+      index++;
+      setState(() {
+        controller.setPlaybackSpeed(speeds[index]);
+      });
+    } else {
+      setState(() {
+        controller.setPlaybackSpeed(speeds[0]);
+      });
+    }
   }
 
   /// 创建video controller
@@ -518,13 +579,80 @@ class _AwsomeVideoPlayerState extends State<AwsomeVideoPlayer>
                 ? widget.videoStyle.videoControlBarStyle.fullscreenExitIcon
                 : widget.videoStyle.videoControlBarStyle.fullscreenIcon,
           )),
+      "next": Padding(
+        padding: EdgeInsets.symmetric(horizontal: 8),
+        child: widget.videoStyle.videoControlBarStyle.nextIcon,
+      ),
+
+      "speed": Padding(
+        padding: EdgeInsets.symmetric(horizontal: 10),
+        child: GestureDetector(
+          onTap: () {
+            changeSpeed();
+          },
+          child: SpeedText(controller, widget.onSpeedChange),
+        ),
+      ),
+
+      "definition": Padding(
+        padding: EdgeInsets.symmetric(horizontal: 10),
+        child: widget.videoStyle.videoControlBarStyle.definitionText,
+      ),
     };
 
     List<Widget> videoProgressChildrens = [];
+    Widget row1 = Row();
+    Widget row2 = Row();
+    Widget row3 = Row();
+    Widget row4 = Row();
+    List<Widget> children1 = [];
+    List<Widget> children2 = [];
+    List<Widget> children3 = [];
+    List<Widget> children4 = [];
     var userSpecifyItem = widget.videoStyle.videoControlBarStyle.itemList;
 
     for (var i = 0; i < userSpecifyItem.length; i++) {
-      videoProgressChildrens.add(videoProgressWidgets[userSpecifyItem[i]]);
+      if (fullscreened) {
+        if (userSpecifyItem[i] == "position-time" ||
+            userSpecifyItem[i] == "progress" ||
+            userSpecifyItem[i] == "basic-progress" ||
+            userSpecifyItem[i] == "duration-time") {
+          children1.add(videoProgressWidgets[userSpecifyItem[i]]);
+        }
+
+        if (userSpecifyItem[i] == "play" || userSpecifyItem[i] == "next") {
+          children3.add(videoProgressWidgets[userSpecifyItem[i]]);
+        }
+
+        if (userSpecifyItem[i] == "speed" ||
+            userSpecifyItem[i] == "definition") {
+          children4.add(videoProgressWidgets[userSpecifyItem[i]]);
+        }
+      } else {
+        if (userSpecifyItem[i] == "play" ||
+            userSpecifyItem[i] == "position-time" ||
+            userSpecifyItem[i] == "progress" ||
+            userSpecifyItem[i] == "basic-progress" ||
+            userSpecifyItem[i] == "duration-time" ||
+            userSpecifyItem[i] == "fullscreen") {
+          children1.add(videoProgressWidgets[userSpecifyItem[i]]);
+        }
+      }
+    }
+    row3 = Row(children: children3);
+    row4 = Row(children: children4);
+    children2.add(row3);
+    children2.add(row4);
+
+    row1 = Row(children: children1);
+    row2 = Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween, children: children2);
+
+    if (fullscreened) {
+      videoProgressChildrens.add(row1);
+      videoProgressChildrens.add(row2);
+    } else {
+      videoProgressChildrens.add(row1);
     }
 
     return videoProgressChildrens;
@@ -549,6 +677,71 @@ class _AwsomeVideoPlayerState extends State<AwsomeVideoPlayer>
                 }
               })
           : Align(),
+
+      /// 亮度/音量指示器
+      Offstage(
+        offstage: indicatorType == 0,
+        child: Container(
+          margin: EdgeInsets.only(
+              top: widget.videoStyle.videoTopBarStyle.margin.top +
+                  widget.videoStyle.videoTopBarStyle.margin.bottom +
+                  widget.videoStyle.videoTopBarStyle.height),
+          alignment: Alignment.topCenter,
+          child: SizedBox(
+            width: MediaQuery.of(context).size.width / 5,
+            child: LinearProgressIndicator(
+              value: indicatorType == 2 ? controller.value.volume : brightness,
+              backgroundColor: Colors.black26,
+              valueColor: new AlwaysStoppedAnimation<Color>(Colors.red),
+            ),
+          ),
+        ),
+      ),
+
+      /// 手势锁
+      Offstage(
+        offstage: !fullscreened || !showLock || !controller.value.isPlaying,
+        child: Container(
+          alignment: Alignment.centerRight,
+          child: Container(
+            margin:
+                EdgeInsets.only(right: MediaQuery.of(context).size.width / 28),
+            padding: EdgeInsets.all(5),
+            child: InkWell(
+              onTap: () {
+                setState(() {
+                  locked = !locked;
+                  if (locked) {
+                    ///如果是播放状态0.5秒后自动隐藏
+                    showTime = Timer(Duration(milliseconds: 500), () {
+                      if (controller != null && controller.value.isPlaying) {
+                        if (showMeau) {
+                          setState(() {
+                            showMeau = false;
+                            showLock = false;
+                            controlBarAnimationController.reverse();
+                          });
+                        }
+                      }
+                    });
+                  } else {
+                    toggleControls();
+                  }
+                  if (widget.onLock != null) {
+                    widget.onLock(locked);
+                  }
+                });
+              },
+              child: locked
+                  ? Icon(
+                      Icons.lock_outline,
+                      color: Colors.white,
+                    )
+                  : Icon(Icons.lock_open, color: Colors.white),
+            ),
+          ),
+        ),
+      ),
 
       /// 是否显示播放按钮
       widget.videoStyle.showPlayIcon &&
@@ -647,18 +840,21 @@ class _AwsomeVideoPlayerState extends State<AwsomeVideoPlayer>
           //双击
           onDoubleTap: () {
             if (!controller.value.initialized) return;
+            if (locked) return;
             togglePlay();
           },
 
           /// 水平滑动 - 调节视频进度
           onHorizontalDragStart: (DragStartDetails details) {
             if (!controller.value.initialized) return;
+            if (locked) return;
             if (controller.value.isPlaying) {
               controller.pause();
             }
           },
           onHorizontalDragUpdate: (DragUpdateDetails details) {
             if (!controller.value.initialized) return;
+            if (locked) return;
             if (!showMeau) {
               setState(() {
                 showMeau = true;
@@ -682,11 +878,16 @@ class _AwsomeVideoPlayerState extends State<AwsomeVideoPlayer>
           /// 垂直滑动 - 调节亮度以及音量
           onVerticalDragStart: (DragStartDetails details) {
             if (!controller.value.initialized) return;
+            if (locked) return;
           },
           onVerticalDragUpdate: (DragUpdateDetails details) async {
             if (!controller.value.initialized) return;
+            if (locked) return;
             // 右侧垂直滑动 - 音量调节
             if (details.globalPosition.dx >= (screenSize.width / 2)) {
+              setState(() {
+                indicatorType = 2;
+              });
               if (details.primaryDelta > 0) {
                 //往下滑动
                 if (controller.value.volume <= 0) return;
@@ -708,6 +909,9 @@ class _AwsomeVideoPlayerState extends State<AwsomeVideoPlayer>
               }
             } else {
               // 左侧垂直滑动 - 亮度调节
+              setState(() {
+                indicatorType = 1;
+              });
               if (brightness == null) {
                 brightness = await Screen.brightness;
               }
@@ -729,7 +933,11 @@ class _AwsomeVideoPlayerState extends State<AwsomeVideoPlayer>
               Screen.setBrightness(brightness);
             }
           },
-          onVerticalDragEnd: (DragEndDetails details) {},
+          onVerticalDragEnd: (DragEndDetails details) {
+            setState(() {
+              indicatorType = 0;
+            });
+          },
 
           ///视频播放器
           child: ClipRect(

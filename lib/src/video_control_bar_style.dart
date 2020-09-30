@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import './video_progress_style.dart';
 
 const double iconSize = 18;
+const double textSize = 12;
 
 /// 底部控制拦样式
 class VideoControlBarStyle {
@@ -53,13 +54,36 @@ class VideoControlBarStyle {
       color: Color(0xFFFFFFFF),
       semanticLabel: "退出全屏",
     ),
+    this.nextIcon = const Icon(
+      Icons.skip_next,
+      size: iconSize,
+      color: Color(0xFFFFFFFF),
+      semanticLabel: "下一个",
+    ),
+    this.speedText = const Text(
+      "倍速",
+      style: TextStyle(
+        fontSize: textSize,
+        color: Color(0xFFFFFFFF),
+      ),
+    ),
+    this.definitionText = const Text(
+      "原画",
+      style: TextStyle(
+        fontSize: textSize,
+        color: Color(0xFFFFFFFF),
+      ),
+    ),
     this.itemList = const [
       "rewind",
       "play",
       "forward",
       "progress",
       "time",
-      "fullscreen"
+      "fullscreen",
+      "next",
+      "speed",
+      "definition"
     ],
   }) : progressStyle = progressStyle ?? VideoProgressStyle();
 
@@ -73,6 +97,7 @@ class VideoControlBarStyle {
   final Color barBackgroundColor;
   final EdgeInsets timePadding;
   final double timeFontSize;
+
   // final double iconSize;
   final Color timeFontColor;
   final Widget playIcon;
@@ -81,5 +106,8 @@ class VideoControlBarStyle {
   final Widget forwardIcon;
   final Widget fullscreenIcon;
   final Widget fullscreenExitIcon;
+  final Widget nextIcon;
+  final Widget speedText;
+  final Widget definitionText;
   final List<String> itemList;
 }
