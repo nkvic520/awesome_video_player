@@ -1,5 +1,6 @@
 name: awsome_video_player_example
 description: Demonstrates how to use the awsome_video_player plugin.
+version: 1.0.0+1
 publish_to: 'none'
 
 environment:
