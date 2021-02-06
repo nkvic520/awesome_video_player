@@ -10,10 +10,10 @@ dependencies:
   flutter:
     sdk: flutter
 
-  video_player: ^0.11.0
-  orientation: ^1.1.0
+  video_player: ^1.0.1
+  orientation: ^1.2.0
   screen: ^0.0.5
-  connectivity: ^0.4.6
+  connectivity: ^2.0.2
 
 dev_dependencies:
   flutter_test:
